@@ -1,18 +1,33 @@
-
 from flask import Flask, request, jsonify
+import requests
 
 app = Flask(__name__)
-telemetry_data = []
 
-@app.route('/metrics', methods=['POST'])
-def receive_telemetry():
-    data = request.get_json()
-    telemetry_data.append(data)
-    return jsonify({"message": "Data received"}), 200
 
-@app.route('/get_data', methods=['GET'])
-def get_data():
-    return jsonify(telemetry_data)
+@app.route('/telemetry', methods=['POST'])
+def receive_data():
+    
+    data = request.json.get('data')
+    print(data)
+    if data:
+        response = requests.post("http://localhost:5001/predict", json={'data': data}, timeout=5)
+        if response.status_code == 200:
+            print(({'message': 'Data received successfully'}), 200)
+            prediction = response.json().get('prediction')
+            return jsonify({'message': 'Data received and processed', 'prediction': prediction}), 200
+        else:
+            return jsonify({'message': 'Failed to get prediction from ML model'}), response.status_code
+        
+    
+    return jsonify({'message': 'No data received'}), 400
 
-if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000)
+
+if __name__ == '__main__':
+    
+    app.run(host='0.0.0.0', port=6000, debug=True)
+        
+
+
+
+
+
